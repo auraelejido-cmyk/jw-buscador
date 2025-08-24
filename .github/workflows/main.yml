@@ -1,32 +1,43 @@
-name: Actualizar Videos JW
+name: Update JW Videos Gist
 
 on:
+  # Runs every day at 2:00 AM UTC
   schedule:
-    # Se ejecuta todos los días a las 5 AM UTC
-    - cron: '0 5 * * *'
+    - cron: '0 2 * * *'
+  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
 jobs:
-  build:
+  update-gist:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout del código
-        uses: actions/checkout@v3
+      # Step 1: Check out your repository's code
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
-      - name: Configurar Python
-        uses: actions/setup-python@v4
+      # Step 2: Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.11'
 
-      - name: Instalar jwlib
-        run: pip install jwlib
+      # Step 3: Install necessary Python libraries
+      - name: Install dependencies
+        run: pip install requests
 
-      - name: Ejecutar el buscador
-        run: python buscador.py
+      # Step 4: Run your Python script to generate the JSON
+      - name: Run Python script
+        run: python update_gist.py
+        env:
+          GIST_ID: ${{ secrets.GIST_ID }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
-      - name: Actualizar el Gist
-        uses: exuanbo/actions-gist@v1
+      # Step 5: **THE CORRECTED ACTION**
+      # Use a working action to update the Gist
+      - name: Update Gist
+        uses: Amatch/actions-gist@v1.1.0 # This is the new, working action
         with:
-          token: ${{ secrets.GIST_TOKEN }}
           gist_id: ${{ secrets.GIST_ID }}
-          file_path: videos.json
+          file_name: videos.json # The name of the file in your Gist
+          content_from_file: videos.json # The local file to upload
+          auth_token: ${{ secrets.GH_TOKEN }}
