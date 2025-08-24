@@ -38,8 +38,3 @@ jobs:
           gist_token: ${{ secrets.GH_TOKEN }}
           gist_id: ${{ secrets.GIST_ID }}
           file_path: videos.json # The local file to upload from
-    
-    print(f"Success! File '{OUTPUT_FILENAME}' created locally.")
-
-if __name__ == "__main__":
-    main()
