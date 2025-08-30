@@ -5,7 +5,7 @@ import time
 
 # --- CONFIGURACIÓN ---
 GIST_ID = os.getenv('GIST_ID')
-GH_TOKEN = os.getenv('GH_TOKEN')
+GH_TOKEN = os.getenv('GIST_TOKEN')
 OUTPUT_FILENAME = "videos.json"
 
 def get_category_data(category_key):
