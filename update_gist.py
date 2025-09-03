@@ -2,7 +2,7 @@ import json
 import os
 import requests
 import time
-from datetime import datetime, timezone # ✅ Importamos las librerías necesarias
+from datetime import datetime, timezone
 
 # --- CONFIGURACIÓN ---
 GIST_ID = os.getenv('GIST_ID')
@@ -29,10 +29,7 @@ def format_video(media_item, category_name):
         description = media_item.get('description', '')
         image_url = media_item['images']['wss']['lg']
         
-        # --- ✅ CAMBIO CLAVE ---
-        # Convertimos la fecha de texto (ISO 8601) a un número (timestamp)
         published_str = media_item['firstPublished']
-        # Reemplazamos 'Z' para que Python pueda interpretarlo y lo convertimos a timestamp
         dt_object = datetime.fromisoformat(published_str.replace('Z', '+00:00'))
         published_timestamp = int(dt_object.timestamp())
 
@@ -44,7 +41,7 @@ def format_video(media_item, category_name):
             "guid": guid,
             "title": title,
             "description": description,
-            "published": published_timestamp, # Ahora guardamos el número
+            "published": published_timestamp,
             "url": video_url_720p,
             "image": image_url,
             "tags": category_name
@@ -52,8 +49,6 @@ def format_video(media_item, category_name):
     except (KeyError, TypeError, IndexError, ValueError) as e:
         print(f"!! Saltando vídeo por datos incorrectos: {media_item.get('naturalKey', 'N/A')}, Error: {e}")
         return None
-
-# ... (El resto del script 'explore_and_extract', 'update_gist', etc., no necesita cambios)
 
 def explore_and_extract(category, all_videos_by_category, seen_guids):
     """Explora recursivamente las categorías y extrae los vídeos, organizándolos por categoría."""
@@ -118,14 +113,33 @@ def main():
     all_videos_by_category = {}
     seen_guids = set()
     explore_and_extract(root_data['category'], all_videos_by_category, seen_guids)
-
-    print(f"\n--- Se han extraído {len(all_videos_by_category)} categorías ---")
     
+    # --- ✅ INICIO DE LA NUEVA LÓGICA DE ORDENACIÓN ---
+    print("\n--- Ordenando categorías por fecha del vídeo más reciente ---")
+    
+    # 1. Obtenemos la fecha más reciente para cada categoría
+    category_latest_dates = {}
     for category_name, video_list in all_videos_by_category.items():
-        video_list.sort(key=lambda x: x['published'], reverse=True)
-        print(f"Categoría '{category_name}' tiene {len(video_list)} vídeos.")
+        if not video_list:
+            latest_date = 0 # Categorías vacías van al final
+        else:
+            # Ordenamos los vídeos dentro de la categoría y obtenemos la fecha del primero
+            video_list.sort(key=lambda x: x['published'], reverse=True)
+            latest_date = video_list[0]['published']
+        category_latest_dates[category_name] = latest_date
 
-    json_content = json.dumps(all_videos_by_category, indent=4, ensure_ascii=False)
+    # 2. Ordenamos las categorías basándonos en esas fechas
+    sorted_category_names = sorted(category_latest_dates, key=category_latest_dates.get, reverse=True)
+    
+    # 3. Construimos el diccionario final en el orden correcto
+    final_ordered_categories = {}
+    for category_name in sorted_category_names:
+        final_ordered_categories[category_name] = all_videos_by_category[category_name]
+        print(f"Categoría '{category_name}' (vídeo más reciente: {datetime.fromtimestamp(category_latest_dates[category_name])})")
+
+    # --- ✅ FIN DE LA NUEVA LÓGICA ---
+
+    json_content = json.dumps(final_ordered_categories, indent=4, ensure_ascii=False)
     
     update_gist(json_content)
 
