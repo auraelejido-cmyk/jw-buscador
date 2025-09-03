@@ -2,11 +2,12 @@ import json
 import os
 import requests
 import time
+from datetime import datetime, timezone # ✅ Importamos las librerías necesarias
 
 # --- CONFIGURACIÓN ---
 GIST_ID = os.getenv('GIST_ID')
 GH_TOKEN = os.getenv('GH_TOKEN')
-OUTPUT_FILENAME = "videos.json" # ✅ CAMBIO REALIZADO
+OUTPUT_FILENAME = "videos.json"
 
 def get_category_data(category_key):
     """Obtiene los datos JSON para una clave de categoría específica."""
@@ -27,8 +28,14 @@ def format_video(media_item, category_name):
         guid = media_item['naturalKey']
         description = media_item.get('description', '')
         image_url = media_item['images']['wss']['lg']
-        published_date = media_item['firstPublished']
         
+        # --- ✅ CAMBIO CLAVE ---
+        # Convertimos la fecha de texto (ISO 8601) a un número (timestamp)
+        published_str = media_item['firstPublished']
+        # Reemplazamos 'Z' para que Python pueda interpretarlo y lo convertimos a timestamp
+        dt_object = datetime.fromisoformat(published_str.replace('Z', '+00:00'))
+        published_timestamp = int(dt_object.timestamp())
+
         video_url_720p = next((f.get('progressiveDownloadURL') for f in media_item.get('files', []) if f.get('label') == '720p'), None)
         if not video_url_720p:
             return None
@@ -37,13 +44,16 @@ def format_video(media_item, category_name):
             "guid": guid,
             "title": title,
             "description": description,
-            "published": published_date,
+            "published": published_timestamp, # Ahora guardamos el número
             "url": video_url_720p,
             "image": image_url,
             "tags": category_name
         }
-    except (KeyError, TypeError, IndexError):
+    except (KeyError, TypeError, IndexError, ValueError) as e:
+        print(f"!! Saltando vídeo por datos incorrectos: {media_item.get('naturalKey', 'N/A')}, Error: {e}")
         return None
+
+# ... (El resto del script 'explore_and_extract', 'update_gist', etc., no necesita cambios)
 
 def explore_and_extract(category, all_videos_by_category, seen_guids):
     """Explora recursivamente las categorías y extrae los vídeos, organizándolos por categoría."""
@@ -117,13 +127,6 @@ def main():
 
     json_content = json.dumps(all_videos_by_category, indent=4, ensure_ascii=False)
     
-    try:
-        with open(OUTPUT_FILENAME, 'w', encoding='utf-8') as f:
-            f.write(json_content)
-        print(f"Fichero '{OUTPUT_FILENAME}' guardado localmente para depuración.")
-    except Exception as e:
-        print(f"Error al guardar el fichero local: {e}")
-
     update_gist(json_content)
 
 if __name__ == "__main__":
