@@ -25,6 +25,14 @@ def format_video(media_item, category_name):
     """Convierte un item de la API al formato que necesita nuestra app."""
     try:
         title = media_item['title']
+
+        # --- ✅ NUEVO FILTRO ---
+        # Si el título contiene "audiodescripciones", ignoramos el vídeo.
+        if "audiodescripciones" in title.lower():
+            print(f"-> Filtrando vídeo por audiodescripción: {title}")
+            return None
+        # --- FIN DEL FILTRO ---
+
         guid = media_item['naturalKey']
         description = media_item.get('description', '')
         image_url = media_item['images']['wss']['lg']
@@ -114,30 +122,23 @@ def main():
     seen_guids = set()
     explore_and_extract(root_data['category'], all_videos_by_category, seen_guids)
     
-    # --- ✅ INICIO DE LA NUEVA LÓGICA DE ORDENACIÓN ---
     print("\n--- Ordenando categorías por fecha del vídeo más reciente ---")
     
-    # 1. Obtenemos la fecha más reciente para cada categoría
     category_latest_dates = {}
     for category_name, video_list in all_videos_by_category.items():
         if not video_list:
-            latest_date = 0 # Categorías vacías van al final
+            latest_date = 0
         else:
-            # Ordenamos los vídeos dentro de la categoría y obtenemos la fecha del primero
             video_list.sort(key=lambda x: x['published'], reverse=True)
             latest_date = video_list[0]['published']
         category_latest_dates[category_name] = latest_date
 
-    # 2. Ordenamos las categorías basándonos en esas fechas
     sorted_category_names = sorted(category_latest_dates, key=category_latest_dates.get, reverse=True)
     
-    # 3. Construimos el diccionario final en el orden correcto
     final_ordered_categories = {}
     for category_name in sorted_category_names:
         final_ordered_categories[category_name] = all_videos_by_category[category_name]
         print(f"Categoría '{category_name}' (vídeo más reciente: {datetime.fromtimestamp(category_latest_dates[category_name])})")
-
-    # --- ✅ FIN DE LA NUEVA LÓGICA ---
 
     json_content = json.dumps(final_ordered_categories, indent=4, ensure_ascii=False)
     
