@@ -26,9 +26,9 @@ def format_video(media_item, category_name):
     try:
         title = media_item['title']
 
-        # --- ✅ NUEVO FILTRO ---
-        # Si el título contiene "audiodescripciones", ignoramos el vídeo.
-        if "audiodescripciones" in title.lower():
+        # --- ✅ FILTRO CORREGIDO Y MÁS ROBUSTO ---
+        # Buscamos la raíz "audiodescrip" para capturar todas las variaciones.
+        if "audiodescrip" in title.lower():
             print(f"-> Filtrando vídeo por audiodescripción: {title}")
             return None
         # --- FIN DEL FILTRO ---
