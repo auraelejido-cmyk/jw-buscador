@@ -1,0 +1,17 @@
+name: Keep Actions Alive
+
+on:
+  schedule:
+    - cron: "0 0 * * 5"  # todos los viernes a las 00:00 UTC
+  workflow_dispatch:
+
+jobs:
+  keepalive:
+    name: Keep repo active
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Keep GitHub Actions alive
+        uses: entepotenz/keep-github-actions-alive-min-dependencies@v1
